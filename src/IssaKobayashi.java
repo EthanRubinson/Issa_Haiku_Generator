@@ -1,6 +1,7 @@
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -30,13 +31,20 @@ public class IssaKobayashi {
 			System.out.println("Done. Processed " + haikuList.size() + " haikus");
 			System.out.println();
 			
-			System.out.println("Beginnig Haiku Analysis...");
+			System.out.println("Beginnig Line Analysis...");
 			Tuple<LineStats[], ArrayList<HaikuModel>> analysis = HaikuUtils.analyzeLineStats(haikuList);
 			LineStats [] lineStats = analysis.x;
 			ArrayList<HaikuModel> models = analysis.y;
 			
 			System.out.println("Done Analysis");
 			System.out.println();
+			
+			System.out.println("Beginnig Word Analysis...");
+			Triple<HashMap<String, ArrayList<String>>,HashMap<String, ArrayList<String>>,HashMap<String, ArrayList<String>>> tt = HaikuUtils.getWordLinkage(haikuList);
+			HashMap<String, ArrayList<String>> wlink1 = tt.x; 
+			HashMap<String, ArrayList<String>> wlink2 = tt.y;
+			HashMap<String, ArrayList<String>> wlink3 = tt.z;
+			
 			System.out.println("-----------------------------------");
 			System.out.println();
 			/*System.out.println(lineStats[0].getWordCountsForLine().entrySet());
@@ -58,28 +66,35 @@ public class IssaKobayashi {
 				HaikuModel chosenModel = models.get(i);
 				Iterator<HaikuModelElement> iter = chosenModel.iterator();
 				String yolo = "";
+				String previousWord = "";
 				int lineNumber = 1;
 				while(iter.hasNext()){
 					HaikuModelElement nextElem = iter.next();
 					if(nextElem.isNewLine()){
 						yolo += "\n";
 						lineNumber++;
+						previousWord = "";
 					}
 					else{
 						int sy = nextElem.getSyllables();
 						int wl = nextElem.getWordLength();
 						//System.out.println(sy + ":" + wl);
 						Map<String, Integer> words;
+						HashMap<String, ArrayList<String>> wordLinks;
 						ArrayList<String> validWords = new ArrayList<String>();
 						if(lineNumber == 1){
 							words = lineStats[0].getWordCountsForLine();
+							wordLinks = wlink1;
 						}
 						else if(lineNumber == 2){
 							words = lineStats[1].getWordCountsForLine();
+							wordLinks = wlink2;
 						}
 						else{
 							words = lineStats[2].getWordCountsForLine();
+							wordLinks = wlink3;
 						}
+						//System.out.println(wordLinks.entrySet());
 						
 						for(String w : words.keySet()){
 							StringTokenizer tk = new StringTokenizer(w,"|");
@@ -92,7 +107,37 @@ public class IssaKobayashi {
 							}
 						}
 						int index = rand.nextInt(validWords.size());
-						yolo += validWords.get(index) + " ";
+						if(previousWord.equals("")){
+							yolo += validWords.get(index) + " ";
+							previousWord = validWords.get(index);
+						}
+						else{
+							ArrayList<String> validWords2 =  wordLinks.get(previousWord);
+							if (validWords2 != null && validWords2.size() > 0){
+								//System.out.println("YES");
+								boolean found = false;
+								EnglishSyllableCounter scounter = new EnglishSyllableCounter();
+								for (String vword : validWords2){
+									if(scounter.countSyllables(vword) >= sy){
+										found = true;
+										yolo += vword + " ";
+										previousWord = vword;
+										break;
+									}
+								}
+								if(!found){
+									//System.out.println(validWords2.size());
+									index = rand.nextInt(validWords2.size());
+									yolo += validWords2.get(index) + " ";
+									previousWord = validWords2.get(index);
+								}
+								
+							}
+							else{
+								yolo += validWords.get(index) + " ";
+								previousWord = validWords.get(index);
+							}
+						}
 						
 					}
 				}

@@ -10,6 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.StringTokenizer;
 
 
 
@@ -89,6 +90,58 @@ public class HaikuUtils {
 		
 		return new Tuple<LineStats[], ArrayList<HaikuModel>>(lineStats, models);
 		
+	}
+	
+	public static Triple<HashMap<String, ArrayList<String>>,HashMap<String, ArrayList<String>>,HashMap<String, ArrayList<String>>> getWordLinkage(List<Haiku> haikuList){
+		HashMap<String, ArrayList<String>> wl1 = new HashMap<String, ArrayList<String>>();
+		HashMap<String, ArrayList<String>> wl2 = new HashMap<String, ArrayList<String>>();
+		HashMap<String, ArrayList<String>> wl3 = new HashMap<String, ArrayList<String>>();
+		
+		for (Haiku haiku : haikuList){
+			
+			/*String form = HaikuStats.calcHaikuForm3(haiku);
+			if(forms.containsKey(form)){
+				forms.put(form, forms.get(form) + 1);
+			}
+			else{
+				forms.put(form, 1);
+			}*/
+			
+			wordLinkageHelper(haiku.getFirstLine(), wl1);
+			wordLinkageHelper(haiku.getSecondLine(), wl2);
+			wordLinkageHelper(haiku.getThirdLine(), wl3);
+		}
+		
+		Triple<HashMap<String, ArrayList<String>>,HashMap<String, ArrayList<String>>,HashMap<String, ArrayList<String>>> t = new Triple<HashMap<String, ArrayList<String>>, HashMap<String, ArrayList<String>>, HashMap<String, ArrayList<String>>> (wl1, wl2, wl3);
+		
+		return t;
+	}
+	
+	private static void wordLinkageHelper(String line, Map<String, ArrayList<String>> wl){
+		
+		StringTokenizer token = new StringTokenizer(line, " ");
+		boolean first = true;
+		String previous = "";
+		while(token.hasMoreTokens()){
+			String t = token.nextToken();
+			if(first){
+				if(!wl.containsKey(t)){
+					wl.put(t, new ArrayList<String>());
+				}
+				previous = t;
+				first = false;
+			}
+			else{
+				if(wl.containsKey(previous)){
+					wl.get(previous).add(t);
+				}
+				else{
+					ArrayList<String> temp = new ArrayList<String>();
+					temp.add(t);
+					wl.put(previous, temp);
+				}
+			}
+		}
 	}
 	
 	private static <K, V extends Comparable<? super V>> Map<K, V> sortByValue(Map<K, V> map) {
